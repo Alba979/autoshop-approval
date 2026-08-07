@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}New Vehicle &middot; {{ config.SHOP_NAME }}{% endblock %}
+{% block content %}
+<div class="card p-4" style="max-width: 560px;">
+  <h4 class="mb-1">Add Vehicle</h4>
+  <p class="text-muted mb-3">for {{ customer.full_name }}</p>
+  <form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="row">
+      <div class="col-4 mb-3">
+        {{ form.year.label(class_="form-label") }}
+        {{ form.year(class_="form-control") }}
+      </div>
+      <div class="col-4 mb-3">
+        {{ form.make.label(class_="form-label") }}
+        {{ form.make(class_="form-control") }}
+      </div>
+      <div class="col-4 mb-3">
+        {{ form.model.label(class_="form-label") }}
+        {{ form.model(class_="form-control") }}
+      </div>
+    </div>
+    <div class="mb-3">
+      {{ form.vin.label(class_="form-label") }}
+      {{ form.vin(class_="form-control") }}
+    </div>
+    <div class="row">
+      <div class="col mb-3">
+        {{ form.license_plate.label(class_="form-label") }}
+        {{ form.license_plate(class_="form-control") }}
+      </div>
+      <div class="col mb-3">
+        {{ form.mileage.label(class_="form-label") }}
+        {{ form.mileage(class_="form-control") }}
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Save Vehicle</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Analytics &middot; {{ config.SHOP_NAME }}{% endblock %}
+{% block content %}
+<h2 class="mb-4">Analytics</h2>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="text-muted small">Total Jobs</div>
+      <div class="fs-3 fw-bold">{{ summary.total_jobs }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="text-muted small">Avg Approval Turnaround</div>
+      <div class="fs-3 fw-bold">
+        {{ summary.overall_avg_turnaround_hours ~ 'h' if summary.overall_avg_turnaround_hours is not none else '-' }}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="text-muted small">Waiting on Customer</div>
+      <div class="fs-3 fw-bold">{{ summary.by_status.get('waiting_on_customer', 0) }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="text-muted small">Completed</div>
+      <div class="fs-3 fw-bold">{{ summary.by_status.get('completed', 0) }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card p-3">
+      <h5>Average Approval Turnaround by Technician</h5>
+      <p class="text-muted small">Hours between sending an estimate and the customer's approve/decline response.</p>
+      <canvas id="turnaroundChart" height="220"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card p-3">
+      <h5>Estimate-to-Final-Cost Variance by Technician</h5>
+      <p class="text-muted small">Average % difference between the approved estimate and the final invoice.</p>
+      <canvas id="varianceChart" height="220"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-1">
+  <div class="col-lg-6">
+    <div class="card p-3">
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Technician</th><th class="text-end">Avg Turnaround</th><th class="text-end">Responses</th></tr></thead>
+        <tbody>
+          {% for row in turnaround %}
+          <tr>
+            <td>{{ row.technician }}</td>
+            <td class="text-end">{{ row.avg_turnaround_hours ~ 'h' if row.avg_turnaround_hours is not none else '-' }}</td>
+            <td class="text-end">{{ row.sample_size }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card p-3">
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Technician</th><th class="text-end">Avg Variance</th><th class="text-end">Jobs</th></tr></thead>
+        <tbody>
+          {% for row in variance %}
+          <tr>
+            <td>{{ row.technician }}</td>
+            <td class="text-end">{{ row.avg_variance_pct }}% ({{ row.avg_variance_dollars|money }})</td>
+            <td class="text-end">{{ row.sample_size }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+async function loadChart(url, elementId, label, valueKey) {
+  const res = await fetch(url);
+  const data = await res.json();
+  const ctx = document.getElementById(elementId).getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(r => r.technician),
+      datasets: [{
+        label: label,
+        data: data.map(r => r[valueKey]),
+        backgroundColor: '#e2711d',
+      }]
+    },
+    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+  });
+}
+loadChart("{{ url_for('analytics.turnaround_json') }}", "turnaroundChart", "Avg turnaround (hours)", "avg_turnaround_hours");
+loadChart("{{ url_for('analytics.variance_json') }}", "varianceChart", "Avg variance (%)", "avg_variance_pct");
+</script>
+{% endblock %}

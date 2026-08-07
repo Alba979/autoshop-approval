@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}New Job &middot; {{ config.SHOP_NAME }}{% endblock %}
+{% block content %}
+<div class="card p-4" style="max-width: 640px;">
+  <h4 class="mb-3">New Repair Job</h4>
+  <form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+      {{ form.customer_id.label(class_="form-label") }}
+      {{ form.customer_id(class_="form-select") }}
+      <div class="form-text">Not listed? <a href="{{ url_for('staff.new_customer') }}">Add a customer</a> first.</div>
+    </div>
+    <div class="mb-3">
+      {{ form.vehicle_id.label(class_="form-label") }}
+      {{ form.vehicle_id(class_="form-select") }}
+    </div>
+    <div class="mb-3">
+      {{ form.technician_id.label(class_="form-label") }}
+      {{ form.technician_id(class_="form-select") }}
+    </div>
+    <div class="mb-3">
+      {{ form.customer_concern.label(class_="form-label") }}
+      {{ form.customer_concern(class_="form-control", rows=3, placeholder="e.g. Grinding noise when braking") }}
+    </div>
+    <button type="submit" class="btn btn-primary">Create Job</button>
+  </form>
+</div>
+{% endblock %}

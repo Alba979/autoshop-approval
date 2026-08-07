@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+
+# Flask / instance data (contains the local SQLite DB and uploaded photos -
+# never commit real customer data or diagnostic photos to source control)
+instance/
+!instance/uploads/diagnostic_photos/.gitkeep
+
+# Env / secrets
+.env
+.flaskenv.local
+
+# Tests / tooling
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Migrations version files are fine to commit once generated; the
+# auto-generated __pycache__ inside them is not.
+migrations/**/__pycache__/

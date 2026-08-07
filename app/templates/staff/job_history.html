@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Job History &middot; {{ config.SHOP_NAME }}{% endblock %}
+{% block content %}
+<h2 class="mb-4">Job History</h2>
+<div class="card">
+  <table class="table table-hover mb-0 align-middle">
+    <thead>
+      <tr>
+        <th>Job #</th><th>Vehicle</th><th>Customer</th><th>Status</th>
+        <th>Approved Estimate</th><th>Final Cost</th><th>Closed</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for job in jobs %}
+      <tr class="job-row" style="cursor:pointer" onclick="window.location='{{ url_for('staff.job_detail', job_id=job.id) }}'">
+        <td>{{ job.job_number }}</td>
+        <td>{{ job.vehicle.display_name }}</td>
+        <td>{{ job.customer.full_name }}</td>
+        <td><span class="badge bg-{{ job.status|status_badge }}">{{ job.status.value.replace('_',' ') }}</span></td>
+        <td>{{ job.latest_approved_estimate.total|money if job.latest_approved_estimate else '-' }}</td>
+        <td>{{ job.final_cost|money }}</td>
+        <td>{{ job.updated_at|friendly_dt }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="text-center text-muted py-4">No closed jobs yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

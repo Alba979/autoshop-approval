@@ -1,0 +1,16 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # Diagnostic photos and the SQLite file must survive container
+      # restarts/rebuilds - see docs/DEPLOYMENT.md for the S3 + managed
+      # Postgres alternative when a shop outgrows a single volume.
+      - shop_data:/app/instance
+    restart: unless-stopped
+
+volumes:
+  shop_data:

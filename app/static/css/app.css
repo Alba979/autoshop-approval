@@ -1,0 +1,71 @@
+:root {
+  --shop-navy: #16324f;
+  --shop-orange: #e2711d;
+  --shop-slate: #4a5a6a;
+}
+
+body {
+  background-color: #f5f6f8;
+}
+
+.shop-navbar {
+  background-color: var(--shop-navy);
+}
+
+.btn-primary {
+  background-color: var(--shop-orange);
+  border-color: var(--shop-orange);
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background-color: #c85f16;
+  border-color: #c85f16;
+}
+
+.card {
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.job-card {
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+.job-card:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.finding-photo-thumb {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+
+.cap-warning {
+  border-left: 4px solid var(--shop-orange);
+  background-color: #fff4e8;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+}
+
+/* --- Customer-facing approval page --- */
+.approval-page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.approval-total {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--shop-navy);
+}
+
+.approve-btn {
+  padding: 0.9rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}

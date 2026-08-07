@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}{{ job.job_number }} &middot; {{ config.SHOP_NAME }}{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap">
+  <div>
+    <h2 class="mb-0">{{ job.job_number }} <span class="badge bg-{{ job.status|status_badge }}">{{ job.status.value.replace('_',' ') }}</span></h2>
+    <p class="text-muted mb-0">{{ job.vehicle.display_name }} &middot; {{ job.customer.full_name }} &middot; {{ job.customer.phone_number }}</p>
+  </div>
+  <div class="text-end">
+    <div class="small text-muted">Spending cap</div>
+    <div class="fw-semibold">{{ job.customer.spending_cap|money }}</div>
+  </div>
+</div>
+
+{% if job.customer_concern %}
+<div class="card p-3 mb-3"><strong>Customer concern:</strong> {{ job.customer_concern }}</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-7">
+
+    <!-- Diagnostic findings -->
+    <div class="card p-3 mb-3">
+      <h5>Diagnostic Findings</h5>
+      {% if not job.findings %}
+        <p class="text-muted">No findings logged yet.</p>
+      {% endif %}
+      {% for finding in job.findings %}
+      <div class="border-bottom py-2">
+        <div class="d-flex justify-content-between">
+          <strong>{{ finding.system_area }}</strong>
+          <span class="badge bg-{{ 'danger' if finding.severity == 'urgent' else ('warning' if finding.severity == 'recommended' else 'secondary') }}">
+            {{ finding.severity }}
+          </span>
+        </div>
+        <div>{{ finding.description }}</div>
+        <div class="text-muted small">Logged {{ finding.created_at|friendly_dt }}</div>
+        {% if finding.photos %}
+        <div class="mt-2">
+          {% for photo in finding.photos %}
+            <a href="{{ url_for('staff.diagnostic_photo', path=photo.storage_path.replace('\\', '/')) }}" target="_blank">
+              <img src="{{ url_for('staff.diagnostic_photo', path=photo.storage_path.replace('\\', '/')) }}" class="finding-photo-thumb" alt="Diagnostic photo">
+            </a>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+
+      {% if job.status.value in ['diagnosing', 'new'] %}
+      <hr>
+      <form method="POST" action="{{ url_for('staff.add_finding', job_id=job.id) }}" enctype="multipart/form-data">
+        {{ finding_form.hidden_tag() }}
+        <div class="row">
+          <div class="col-md-4 mb-2">
+            {{ finding_form.system_area.label(class_="form-label small") }}
+            {{ finding_form.system_area(class_="form-control form-control-sm", placeholder="Brakes") }}
+          </div>
+          <div class="col-md-3 mb-2">
+            {{ finding_form.severity.label(class_="form-label small") }}
+            {{ finding_form.severity(class_="form-select form-select-sm") }}
+          </div>
+          <div class="col-md-5 mb-2">
+            {{ finding_form.photo.label(class_="form-label small") }}
+            {{ finding_form.photo(class_="form-control form-control-sm") }}
+          </div>
+        </div>
+        <div class="mb-2">
+          {{ finding_form.description.label(class_="form-label small") }}
+          {{ finding_form.description(class_="form-control form-control-sm", rows=2, placeholder="Front pads worn to 2mm, rotors scored") }}
+        </div>
+        <button type="submit" class="btn btn-sm btn-outline-primary">Add Finding</button>
+      </form>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <div class="col-lg-5">
+
+    <!-- Estimate -->
+    <div class="card p-3 mb-3">
+      <h5>Estimate</h5>
+      {% set estimate = job.current_estimate %}
+      {% if estimate %}
+        <table class="table table-sm">
+          <tbody>
+            {% for item in estimate.line_items %}
+            <tr>
+              <td>
+                <span class="badge bg-light text-dark border">{{ item.kind }}</span>
+                {{ item.description }}
+              </td>
+              <td class="text-end">{{ item.quantity }} &times; {{ item.unit_price|money }}</td>
+              <td class="text-end">{{ item.line_total|money }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr><td colspan="2" class="text-end text-muted">Subtotal</td><td class="text-end">{{ estimate.subtotal|money }}</td></tr>
+            <tr><td colspan="2" class="text-end text-muted">Tax</td><td class="text-end">{{ estimate.tax_amount|money }}</td></tr>
+            <tr class="fw-bold"><td colspan="2" class="text-end">Total</td><td class="text-end">{{ estimate.total|money }}</td></tr>
+          </tfoot>
+        </table>
+
+        {% if estimate.total > job.customer.spending_cap %}
+        <div class="cap-warning small mb-2">
+          This estimate (${{ estimate.total }}) exceeds {{ job.customer.first_name }}'s
+          {{ job.customer.spending_cap|money }} spending cap. A fresh explicit approval
+          is required before work can begin.
+        </div>
+        {% endif %}
+
+        <div class="small text-muted mb-2">Status: <strong>{{ estimate.status }}</strong></div>
+      {% else %}
+        <p class="text-muted">No estimate started yet.</p>
+      {% endif %}
+
+      {% set can_edit_estimate = job.status.value in ['diagnosing', 'new', 'approved', 'in_progress', 'declined', 'expired'] and (not estimate or estimate.status in ['draft', 'approved', 'declined', 'expired']) %}
+      {% if can_edit_estimate %}
+      {% if estimate and estimate.status != 'draft' %}
+      <div class="alert alert-light border small mb-2">
+        Adding a line item here starts a <strong>new revised estimate</strong> for this job.
+        If it exceeds {{ job.customer.first_name }}'s spending cap (or the amount they
+        already approved), it will require a fresh customer approval before work continues.
+      </div>
+      {% endif %}
+      <form method="POST" action="{{ url_for('staff.add_line_item', job_id=job.id) }}" class="border-top pt-2">
+        {{ line_item_form.hidden_tag() }}
+        <div class="row g-1">
+          <div class="col-3">{{ line_item_form.kind(class_="form-select form-select-sm") }}</div>
+          <div class="col-5">{{ line_item_form.description(class_="form-control form-control-sm", placeholder="Description") }}</div>
+          <div class="col-2">{{ line_item_form.quantity(class_="form-control form-control-sm") }}</div>
+          <div class="col-2">{{ line_item_form.unit_price(class_="form-control form-control-sm") }}</div>
+        </div>
+        <button type="submit" class="btn btn-sm btn-outline-primary mt-2">+ Add Line Item</button>
+      </form>
+
+      {% if estimate and estimate.line_items %}
+      <form method="POST" action="{{ url_for('staff.send_estimate', job_id=job.id) }}" class="mt-3 border-top pt-2">
+        {{ send_form.hidden_tag() }}
+        <div class="input-group input-group-sm">
+          {{ send_form.channel(class_="form-select") }}
+          <button type="submit" class="btn btn-primary">Send Estimate to Customer</button>
+        </div>
+      </form>
+      {% endif %}
+      {% endif %}
+    </div>
+
+    <!-- Approval history -->
+    {% if job.approval_requests %}
+    <div class="card p-3 mb-3">
+      <h5>Approval Requests</h5>
+      {% for approval in job.approval_requests %}
+      <div class="border-bottom py-2 small">
+        <div>Sent {{ approval.sent_at|friendly_dt }} via {{ approval.channel }} to {{ approval.recipient }}</div>
+        <div>Amount at send: {{ approval.estimate_total_at_send|money }}
+          {% if approval.exceeded_spending_cap %}<span class="badge bg-warning text-dark">over cap</span>{% endif %}
+        </div>
+        {% if approval.responded_at %}
+          <div class="text-{{ 'success' if approval.response == 'approved' else 'danger' }}">
+            {{ approval.response|capitalize }} at {{ approval.responded_at|friendly_dt }}
+            ({{ (approval.turnaround.total_seconds() / 3600) | round(1) }}h turnaround)
+          </div>
+        {% else %}
+          <div class="text-warning">Awaiting response (expires {{ approval.expires_at|friendly_dt }})</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Status actions -->
+    <div class="card p-3">
+      <h5>Job Actions</h5>
+      {% if job.status.value == 'approved' %}
+      <form method="POST" action="{{ url_for('staff.start_work', job_id=job.id) }}">
+        <button type="submit" class="btn btn-primary w-100">Start Work</button>
+      </form>
+      {% elif job.status.value == 'in_progress' %}
+      <form method="POST" action="{{ url_for('staff.complete_job', job_id=job.id) }}">
+        {{ complete_form.hidden_tag() }}
+        <div class="mb-2">
+          {{ complete_form.final_cost.label(class_="form-label small") }}
+          {{ complete_form.final_cost(class_="form-control form-control-sm") }}
+        </div>
+        <button type="submit" class="btn btn-success w-100">Mark Completed</button>
+      </form>
+      {% else %}
+      <p class="text-muted small mb-0">No actions available in the current status.</p>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}
